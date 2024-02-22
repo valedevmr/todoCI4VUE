@@ -1,0 +1,20 @@
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: 'Lato', sans-serif;
+}
+
+
+.defecto {
+    background-color: rgb(63, 62, 62);
+}
+.blanco{
+    background-color: rgb(255, 255, 255);
+}
+.azul{
+    background-color: rgb(28, 35, 74);
+}
+.verde{
+    background-color: rgb(34, 124, 88);
+}
