@@ -37,11 +37,7 @@ async function login(usuario, password) {
         },
         body: JSON.stringify({ correo: usuario, password: password })
     };
-
-
-    const response = await fetch('http://localhost:8080/api/login', options);
-
-
+   
 
     try {
         const response = await fetch('http://localhost:8080/api/login', options);
@@ -60,7 +56,7 @@ async function login(usuario, password) {
             timer: 1500
 
         }).then((result) => {
-
+            window.location.href = '/todos';
         });
 
     } catch (error) {
@@ -285,4 +281,8 @@ function alerta(mensaje, icono) {
     }
 
 }
+
+
+
+
 </style>
