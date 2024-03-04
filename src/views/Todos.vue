@@ -6,8 +6,8 @@ import Swal from 'sweetalert2'
 
 let titulo = ref("");
 let descripcion = ref("");
-let estado = ref("");
-let tipo = ref("");
+let estado = ref("creada");
+let tipo = ref("normal");
 let bearerToken = ref("");
 let todos = ref([]);
 let bandera = ref(1);
@@ -54,7 +54,7 @@ let logout = () => {
 
 
 
-let createTask = () => {
+async function createTask() {
   let token = localStorage.getItem("token");
   let string = new String(token);
   let bearer = "Bearer " + string.toString() + "";
@@ -65,21 +65,62 @@ let createTask = () => {
       'Content-Type': 'application/json',
       Authorization: bearer
     },
-    body: JSON.stringify({ titulo: titulo.value, descripcion: descripcion.value,tipo:tipo.value })
+    body: JSON.stringify({ titulo: titulo.value, descripcion: descripcion.value, tipo: tipo.value })
   };
 
   fetch('http://localhost:8080/api/task', options)
     .then(response => response.json())
-    .then(response => console.log(response))
+    .then(async response => {
+      let reloaDR = await reloadDataRender();
+      todos.value = reloaDR;
+      titulo.value = "";
+      descripcion.value = ""
+      tipo.value = ""
+      modalvisiblecreate.value =false;
+      Swal.fire({
+        title: "Creado!",
+        text: "Se ha Creado con exito la tarea",
+        icon: "success",
+        timer: 1800
+      });
+    })
     .catch(err => console.error(err));
 }
 
 
+
+async function reloadDataRender() {
+  const optionsDR = {
+    method: 'GET',
+    headers: {
+      Authorization: bearer,
+    }
+  };
+
+  try {
+    const response = await fetch('http://localhost:8080/api/task', optionsDR);
+    if (!response.ok) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    const responseData = await response.json();
+
+    return responseData;
+  } catch (error) {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  }
+
+}
+
+
+
+
 async function mostrarModalEditar(item) {
 
-  // ... abrir modal con el ID
   isModalVisible.value = true;
   let task = await getTask(item);
+  console.log(task);
   titulo.value = task.task.titulo;
   tipo.value = task.task.tipo;
   estado.value = task.task.estado;
@@ -119,6 +160,8 @@ async function getTask(id) {
 
 
 
+
+//Muestra un sweel alert para la confirmacion al momento de elimina una tarea
 async function modaldelete(id_task) {
   Swal.fire({
     title: "¿Seguro que desea eliminar la tarea?",
@@ -158,8 +201,6 @@ async function modaldelete(id_task) {
               .then(response => response.json())
               .then(response => {
                 todos.value = response;
-                console.log(response);
-                bandera.value = 1;
               })
               .catch(err => {
                 window.location.href = '/login';
@@ -190,6 +231,19 @@ async function modaldelete(id_task) {
     }
   });
 }
+
+
+
+
+function cancelSendData(){
+  titulo.value = "";
+  descripcion.value = "";
+  estado.value = "creada";
+  tipo.value = "normal";
+  isModalVisible.value =false;
+  modalvisiblecreate.value =false;
+}
+
 
 
 </script>
@@ -267,7 +321,7 @@ async function modaldelete(id_task) {
           </select>
         </section>
         <section class="buttons">
-          <button @click="isModalVisible = false">Cancelar</button>
+          <button @click="cancelSendData">Cancelar</button>
           <button @click="update">Guardar</button>
         </section>
       </div>
@@ -275,7 +329,7 @@ async function modaldelete(id_task) {
   </div>
 
 
-  <!-- Modal para confirmar eliminacion de tarea -->
+  <!-- Modal para la creacion de un tarea -->
 
   <div v-if="modalvisiblecreate" class="modal-contenedor modal-delete">
     <div class="modal">
@@ -292,10 +346,10 @@ async function modaldelete(id_task) {
               {{ option.text }}</option>
 
           </select>
-          
+
         </section>
         <section class="buttons">
-          <button @click="modalvisiblecreate = false">Cancelar</button>
+          <button @click="cancelSendData">Cancelar</button>
           <button @click="createTask">Guardar</button>
         </section>
       </div>
