@@ -3,7 +3,7 @@ import { ref, onBeforeUnmount, onBeforeMount, computed } from 'vue'
 import Swal from 'sweetalert2'
 
 
-
+let user = ref(0);
 let titulo = ref("");
 let descripcion = ref("");
 let estado = ref("creada");
@@ -56,6 +56,7 @@ let logout = () => {
 
 async function createTask() {
   let token = localStorage.getItem("token");
+
   let string = new String(token);
   let bearer = "Bearer " + string.toString() + "";
   bearerToken.value = bearer;
@@ -71,20 +72,34 @@ async function createTask() {
   fetch('http://localhost:8080/api/task', options)
     .then(response => response.json())
     .then(async response => {
-      let reloaDR = await reloadDataRender();
-      todos.value = reloaDR;
-      titulo.value = "";
-      descripcion.value = ""
-      tipo.value = ""
-      modalvisiblecreate.value =false;
-      Swal.fire({
-        title: "Creado!",
-        text: "Se ha Creado con exito la tarea",
-        icon: "success",
-        timer: 1800
-      });
+
+      if (response.success) {
+        let reloaDR = await reloadDataRender();
+        todos.value = reloaDR;
+        titulo.value = "";
+        descripcion.value = ""
+        tipo.value = "normal"
+        modalvisiblecreate.value = false;
+        Swal.fire({
+          title: "Creado!",
+          text: "Se ha Creado con exito la tarea",
+          icon: "success",
+          timer: 1800
+        });
+      } else {
+        Swal.fire({
+          title: "¡Ocurrio un problema!",
+          text: response.message,
+          icon: "warning",
+          timer: 1800
+        });
+      }
+
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    });
 }
 
 
@@ -125,6 +140,9 @@ async function mostrarModalEditar(item) {
   tipo.value = task.task.tipo;
   estado.value = task.task.estado;
   descripcion.value = task.task.descripcion;
+  user.value = item;
+
+
 }
 
 async function getTask(id) {
@@ -153,9 +171,6 @@ async function getTask(id) {
     window.location.href = '/login';
   }
 }
-
-
-
 
 
 
@@ -235,13 +250,65 @@ async function modaldelete(id_task) {
 
 
 
-function cancelSendData(){
+function cancelSendData() {
   titulo.value = "";
   descripcion.value = "";
   estado.value = "creada";
   tipo.value = "normal";
-  isModalVisible.value =false;
-  modalvisiblecreate.value =false;
+  isModalVisible.value = false;
+  modalvisiblecreate.value = false;
+}
+
+
+
+
+async function update() {
+
+  let string = new String(token);
+  let bearer = "Bearer " + string.toString() + "";
+  bearerToken.value = bearer;
+
+  const optionsP = {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: bearer
+    },
+    body: JSON.stringify({ titulo: titulo.value, descripcion: descripcion.value, tipo: tipo.value, estado: estado.value })
+  };
+
+  fetch('http://localhost:8080/api/task/' + user.value, optionsP)
+    .then(response => response.json())
+    .then(async response => {
+
+
+      if (response.success) {
+        let reloaDR = await reloadDataRender();
+        todos.value = reloaDR;
+        titulo.value = "";
+        descripcion.value = ""
+        tipo.value = "normal"
+        isModalVisible.value = false;
+        Swal.fire({
+          title: "Actualizada!",
+          text: "Se ha actualizado con exito la tarea",
+          icon: "success",
+          timer: 1800
+        });
+      } else {
+        Swal.fire({
+          title: "¡Ocurrio un problema!",
+          text: response.message,
+          icon: "warning",
+          timer: 1800
+        });
+      }
+    })
+    .catch(err => {
+      console.log(err);
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    });
 }
 
 
@@ -278,16 +345,24 @@ function cancelSendData(){
             <th>Título</th>
 
             <th>Editar</th>
-            <th>Ver</th>
+            <!-- <th>Ver</th> -->
             <th>Eliminar</th>
+            <th>status</th>
           </tr>
           <tr v-for="item in todos.datos">
             <td>{{ item.titulo }}</td>
             <td @click="mostrarModalEditar(item.id)">
               <i class="fa fa-pencil" aria-hidden="true" data-id="item.id"></i>
             </td>
-            <td @click="modalShow(item.id)"><i class="fa fa-eye" aria-hidden="true"></i></td>
-            <td @click="modaldelete(item.id)"><i class="fa fa-trash" aria-hidden="true"></i></td>
+            <!-- <td @click="modalShow(item.id)"><i class="fa fa-eye" aria-hidden="true"></i></td> -->
+            <td @click="modaldelete(item.id)"><i class="fa fa-trash" style="color: red;" aria-hidden="true"></i></td>
+
+            <td>
+              <span class="status-blue" v-if="item.estado == 'creada'"></span>
+              <span class="status-red" v-else-if="item.estado == 'pendiente'"></span>
+              <span class="status-yellow" v-else-if="item.estado == 'en proceso'"></span>
+              <span class="status-green" v-else-if="item.estado == 'finalizada'"></span>
+            </td>
           </tr>
 
         </table>
@@ -365,6 +440,50 @@ function cancelSendData(){
 
   width: 100%;
   height: auto;
+}
+
+.status-blue {
+  height: 13px !important;
+  width: 13px !important;
+  border: 1px solid rgb(73, 142, 252);
+  background-color: rgb(93, 152, 246);
+  box-sizing: border-box;
+  border-radius: 50%;
+  display: block;
+  margin: auto;
+}
+
+.status-green {
+  height: 13px !important;
+  width: 13px !important;
+  border: 1px solid rgb(5, 149, 86);
+  background-color: rgb(34, 152, 101);
+  box-sizing: border-box;
+  border-radius: 50%;
+  display: block;
+  margin: auto;
+}
+
+.status-yellow {
+  height: 13px !important;
+  width: 13px !important;
+  border: 1px solid rgba(40, 40, 39, 0.422);
+  background-color: rgb(228, 232, 0);
+  box-sizing: border-box;
+  border-radius: 50%;
+  display: block;
+  margin: auto;
+}
+
+.status-red {
+  height: 13px !important;
+  width: 13px !important;
+  border: 1px solid rgb(232, 0, 0);
+  background-color: rgb(181, 0, 0);
+  box-sizing: border-box;
+  border-radius: 50%;
+  display: block;
+  margin: auto;
 }
 
 .modal {
