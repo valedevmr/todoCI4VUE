@@ -325,6 +325,7 @@ async function update() {
         <article>
           <button @click="logout">cerrar sesion</button>
         </article>
+       
 
       </header>
 
