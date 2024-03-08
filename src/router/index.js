@@ -14,6 +14,7 @@ const router = createRouter({
     {
       path: '/todos',
       name: 'todos',
+      beforeEnter: authMiddleware,
       component: () => import('../views/Todos.vue')
     },
     {
@@ -30,6 +31,11 @@ const router = createRouter({
       path: '/recuperar_contrasena',
       name: 'recuperar_contrasena',
       component: () => import('../views/RecupararCView.vue')
+    },
+    {
+      path: '/sendcp',
+      name: 'sendcp',
+      component: () => import('../views/SendCP.vue')
     }
   ]
 })

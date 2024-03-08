@@ -1,53 +1,71 @@
 <script setup>
-
-import { ref } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { onBeforeUnmount, onBeforeUpdate, onMounted, onUpdated, ref } from 'vue';
 import Swal from 'sweetalert2'
 
 
-let usuario = ref("");
-let correovalido = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+let token = ref("");
+let password = ref("");
+let user = ref("");
+
+onMounted(() => {
+   const url = window.location.search;
+   const urlParametro = new URLSearchParams(url);
+   token.value = urlParametro.get("token");
+   user.value = urlParametro.get("user");
+
+})
 
 function fethching() {
 
 
-   if (!correovalido.test(usuario.value)) {
-      alerta("Correo Invalido", "warning")
+   if (!password.value) {
+      alerta("La contraseña es requerida", "warning")
+      return;
+   }
+
+   if ((password.value).length < 1) {
+      alerta("La contraseña es requerida", "warning")
       return;
    }
 
    const options = {
-      method: 'POST',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ correo: usuario.value })
+      body: JSON.stringify({ token: token.value, new_password: password.value })
    };
 
-   fetch('http://localhost:8080/api/passchangereq', options)
+   fetch('http://localhost:8080/api/changepasswordo/' + user.value + '', options)
       .then(response => response.json())
       .then(response => {
          if (!response.success) {
-            alerta(response.message, "warning");
+            alerta(response.message,"warning");
             return;
          }
-         alerta(response.message, "success");
+         Swal.fire({
+            title: response.message,
+            timer: 2000,
+            icon: "success",
+            timer: 1500
+
+         }).then((result) => {
+            window.location.href = '/login';
+         });
          return;
       })
       .catch(err => console.error(err));
 
-   // login(usuario.value, password.value);
-
-
 }
+
 
 
 function alerta(mensaje, icono) {
    Swal.fire({
       title: mensaje,
       text: "",
-      icon: icono
+      icon: icono,
+      timer: 1800
    });
-}
-</script>
+}</script>
 
 <template>
    <main class="container-login">
@@ -58,11 +76,14 @@ function alerta(mensaje, icono) {
          </header>
          <form @submit.prevent="fethching">
             <div class="grupo">
-               <label for="correo">Correo:</label>
-               <input type="text" placeholder="usuario@correo.com" id="correo" v-model.trim="usuario">
+               <label for="password">Nueva contraseña:</label>
+               <input type="password" placeholder="**********" id="password" v-model.trim="password">
+            </div>
+            <div class="grupo hidden">
+               <input type="input" placeholder="**********" v-model.trim="token">
             </div>
             <div class="grupo enviar">
-               <button type="submit" id="submit">Recuperar contraseña</button>
+               <button type="submit" id="submit">Iniciar sesión</button>
             </div>
 
 
@@ -74,9 +95,9 @@ function alerta(mensaje, icono) {
                   <RouterLink to="/registrarte">Aquí</RouterLink>
                </span>
             </article>
-            <article>Iniciar sesión
+            <article>Recuperar contraseña
                <span>
-                  <RouterLink to="/login">Aquí</RouterLink>
+                  <RouterLink to="/recuperar_contrasena">Aquí</RouterLink>
                </span>
             </article>
          </footer>
@@ -99,7 +120,7 @@ function alerta(mensaje, icono) {
    background-color: rgba(255, 255, 255, 0.959);
    border: 1px solid rgb(63, 62, 62);
    width: 26vw;
-   height: 70vh;
+   height: 80vh;
    display: flex;
    justify-content: space-around;
    flex-wrap: wrap;
@@ -250,5 +271,10 @@ function alerta(mensaje, icono) {
 
    }
 
+}
+
+
+.hidden {
+   display: none !important;
 }
 </style>
